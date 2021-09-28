@@ -1,6 +1,7 @@
 <template>
   <div id="app">
-    <div class="header-img">Federated</div>
+    <div class="header-img"></div>
+    <h1 style="text-align:center">Mobility dataspace federated catalog</h1>
     <router-view />
   </div>
 </template>
@@ -21,15 +22,12 @@ export default {
 }
 .header-img {
   width: 100%;
-  height: 400px;
-  background: url("./assets/multimodal.jpg");
+  height: 500px;
+  background: url("./assets/header.png");
   background-size: cover;
 }
-html,
 body {
   height: 100%;
-}
-body {
   background-position: center center;
   background-repeat: no-repeat;
   background-attachment: fixed;

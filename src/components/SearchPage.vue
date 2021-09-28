@@ -2,7 +2,7 @@
   <div class="container-fluid">
     <div class="search-wrapper">
       <!-- the search bar form -->
-      <form v-on:submit="getfilteredData">
+      <form v-on:submit="getFilteredData">
         <div class="form-row">
           <div class="col-10">
             <input
@@ -10,7 +10,7 @@
               class="form-control"
               placeholder="Enter key word  ..."
               v-model="search"
-              v-on:keyup="getfilteredData"
+              v-on:keyup="getFilteredData"
             />
           </div>
           <div class="col-2">
@@ -23,7 +23,7 @@
       <!-- check boxes -->
       <div id="checkboxes">
         <div
-          v-for="(stack, index) in stacks"
+          v-for="(stack, index) in keywords"
           :key="index"
           class="form-check form-check-inline"
         >
@@ -31,7 +31,7 @@
             class="form-check-input"
             type="checkbox"
             v-model="stack.checked"
-            v-on:change="getfilteredData"
+            v-on:change="getFilteredData"
           />
           <label class="form-check-label">
             {{ stack.value }}
@@ -52,7 +52,6 @@
 </template>
 <script>
 import ItemCard from "./ItemCard";
-import data from "../data/data";
 export default {
   name: "SearchPage",
   components: {
@@ -61,7 +60,7 @@ export default {
   computed: {
     selectedFilters: function() {
       let filters = [];
-      let checkedFiters = this.stacks.filter(obj => obj.checked);
+      let checkedFiters = this.keywords.filter(obj => obj.checked);
       checkedFiters.forEach(element => {
         filters.push(element.value);
       });
@@ -70,67 +69,106 @@ export default {
   },
   data() {
     return {
+      isModalVisible: false,
+      availableData: [],
       filteredData: [],
       search: "",
-      stacks: [
+      keywords: [
         {
           checked: false,
-          value: "language"
+          value: "flight"
         },
         {
           checked: false,
-          value: "framework"
+          value: "train"
         },
         {
           checked: false,
-          value: "frontend"
+          value: "schedule"
         },
         {
           checked: false,
-          value: "backend"
+          value: "passenger"
         },
         {
           checked: false,
-          value: "mobile"
+          value: "open"
         },
         {
           checked: false,
-          value: "web"
-        },
-        {
-          checked: false,
-          value: "hybrid"
-        },
-        {
-          checked: false,
-          value: "database"
+          value: "proprietary"
         }
       ]
     };
   },
   methods: {
-    getfilteredData: function() {
-      this.filteredData = data;
+    getFilteredData: function() {
+      this.filteredData = this.availableData;
       let filteredDataByfilters = [];
       let filteredDataBySearch = [];
       // first check if filters where selected
       if (this.selectedFilters.length > 0) {
         filteredDataByfilters = this.filteredData.filter(obj =>
-          this.selectedFilters.every(val => obj.stack.indexOf(val) >= 0)
+          this.selectedFilters.every(val => obj.keywords.indexOf(val) >= 0)
         );
         this.filteredData = filteredDataByfilters;
       }
       // then filter according to keyword, for now this only affects the name attribute of each data
       if (this.search !== "") {
         filteredDataBySearch = this.filteredData.filter(
-          obj => obj.name.indexOf(this.search.toLowerCase()) >= 0
+          obj =>
+            JSON.stringify(obj.exemple)
+              .toLowerCase()
+              .indexOf(this.search.toLowerCase()) >= 0
         );
         this.filteredData = filteredDataBySearch;
       }
+    },
+    async getAvailableData() {
+      let consumer = "https://gaiax-demo-consumer-connector.azurewebsites.net";
+      // let providers = [
+      //   "http://192.168.56.1:8182",
+      //   "http://192.168.56.1:8183",
+      //   "http://192.168.56.1:8184"
+      // ];
+      let providers = [
+        "https://gaiax-demo-provider-connector-afkl.azurewebsites.net",
+        "https://gaiax-demo-provider-connector-sncf.azurewebsites.net",
+        "https://gaiax-demo-provider-connector-1a.azurewebsites.net"
+      ];
+
+      providers.forEach(provider => this.getCatalog(consumer, provider));
+
+      this.filteredData = this.availableData;
+    },
+    async getCatalog(consumerConnector, providerConnector) {
+      this.error = "";
+
+      const uri =
+        consumerConnector +
+        "/api/demo/catalog?connectorAddress=" +
+        providerConnector;
+      fetch(uri, { method: "GET" })
+        .then(response => {
+          response
+            .json()
+            .then(data => {
+              console.log("Succesful call to " + uri);
+              data.forEach(entry => this.availableData.push(entry));
+            })
+            .catch(error => {
+              console.log(error);
+              this.error = "Failed to fetch body from call response: " + error;
+            });
+        })
+        .catch(error => {
+          console.log(error);
+          this.error = "Call failed: " + error;
+        });
     }
   },
   mounted() {
-    this.getfilteredData();
+    this.getAvailableData();
   }
 };
 </script>
